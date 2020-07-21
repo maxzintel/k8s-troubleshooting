@@ -4,6 +4,7 @@ References: Kubernetes documentation as a whole, but also:
 * https://kubernetes.io/docs/tasks/debug-application-cluster/debug-application/
 * https://kubernetes.io/docs/tasks/debug-application-cluster/debug-cluster/
 * https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/
+* https://kubernetes.io/docs/tasks/debug-application-cluster/get-shell-running-container/
 
 ### Step One: Is it the Application?
 *"What is the problem? Is it your Pods, your Replication Controller or your Service?"*
@@ -20,3 +21,10 @@ References: Kubernetes documentation as a whole, but also:
     * **NOTE: You may need to ssh onto your Node if troubleshooting becomes more dire.** Make sure you have this setup already OR have someone you can get the required files from.
     * `kubectl logs ${POD_NAME} ${CONTAINER_NAME}` to look at the logs of the affected container. OR...
     * `kubectl logs --previous ${POD_NAME} ${CONTAINER_NAME}` to look at the logs of the **previously crashed** container. 
+    * If the container image includes some debugging tools, you can exec into the container and dig into the issues that way: `kubectl exec ${POD_NAME} -c ${CONTAINER_NAME} -- ${CMD} ${ARG1} ${ARG2} ... ${ARGN}`.
+      * Ex: If running Cassandra, you can look at the logs with `kubectl exec cassandra -- cat /var/log/cassandra/system.log`
+      * Alternatively, you can open a shell into your Cassandra container with `kubectl exec -it cassandra -- sh`.
+    * If you don't have any debugging tools in the container, you can try debugging with an ephemeral container that does have the tools you need.
+      * `kubectl alpha debug` adds an ephemeral container to a running Pod.
+      * More specifically...
+        * `kubectl alpha debug -it ${POD_NAME} --image=busybox --target=${POD_NAME}`
