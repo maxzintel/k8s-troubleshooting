@@ -28,3 +28,20 @@ References: Kubernetes documentation as a whole, but also:
       * `kubectl alpha debug` adds an ephemeral container to a running Pod.
       * More specifically...
         * `kubectl alpha debug -it ${POD_NAME} --image=busybox --target=${POD_NAME}`
+  * **Your Pod is Running but not doing what it is supposed to.** This one is generally an issue with your Pod's description/manifest file.
+    * Check your YAML indentation and make sure there are no typos throughout your Pod description.
+    * First, delete your Pod. `kubectl delete pods ${POD_NAME}`
+    * Then, apply your manifest again, but using the validate flag: `kubectl apply --validate -f ${POD}.yaml`
+      * This should reveal some additional error logs that may help shed some light on the issue.
+    * **Alternatively output the manifest on the K8s API Server and compare to what you wanted to create.**
+      * `kubectl get pods/mypod -o yaml > mypod-on-apiserver.yaml`. Generally you should see a few extra lines of yaml in the manifest running on the API server. **HOWEVER** if lines are missing on the API server manifest vs your file, there's probably an issue with the Pod spec.
+* **Services**
+  * Services provide load balancing across a set of Pods. There are severak common problems that can make Services not work properly.
+  * **Verify there are endpoints for the Service** (for every Service object the api server makes an endpoints resource available).
+    * Check this with `kubectl get endpoints ${SERVICE_NAME}`. If the endpoints match up with the number of containers that you expect to be a member of the Service. Ex: if you have 3 replicas, you should have 3 IP's output from that last command.
+  * **Your Service is missing endpoints.** Try listing the pods using the labels that Service uses.
+    * If you have a Service where the labels are: `- selector: name: nginx, type: frontend` for example, use `kubectl get pods --selector=name=nginx,type=frontend`
+    * Depending on the output from above, there are a couple possibilities:
+      * 1) **If the list of Pods matches expectations, but your endpoints are still empty**: You likely don't have the right ports exposed.
+        * **If your service has a ContainerPort specified, but the Pods that are selected dob't have that port listed, then they won't be added to the endpoints list.** Verify the Pod's containerPort matches the Service's targetPort.
+
