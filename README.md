@@ -44,4 +44,8 @@ References: Kubernetes documentation as a whole, but also:
     * Depending on the output from above, there are a couple possibilities:
       * 1) **If the list of Pods matches expectations, but your endpoints are still empty**: You likely don't have the right ports exposed.
         * **If your service has a ContainerPort specified, but the Pods that are selected dob't have that port listed, then they won't be added to the endpoints list.** Verify the Pod's containerPort matches the Service's targetPort.
+      * 2) **Network traffic is not forwarded**. So there are endpoints in the list, you can connect, but the connection is immediately dropped. This likely means your proxy can't contact your pods. Check the following:
+        * Are your pods working correctly? (See above).
+        * Can you connect to the pods directly?
+        * Is your app serving the port that you configured? I.E., if your app serves 8080, `containerPort` needs to be 8080.
 
