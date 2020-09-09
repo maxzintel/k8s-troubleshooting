@@ -55,4 +55,42 @@ References: Kubernetes documentation as a whole, but also:
   * One thing I've personally run into on this is when running the AWS provider in Terraform via Windows things don't play well, and you end up with everything looking pretty except that EKS doesn't know about the nodes you created for it to use.
   * Verify they are all ready too!
   * Similarly, run `kubectl cluster-info dump` to get more detailed info on the overall health of your cluster.
+* **Check the logs**
+  * Master Nodes:
+    * `/var/log/kube-apiserver.log` - API Server.
+    * `/var/log/kube-scheduler.log` - Scheduler, makes scheduling decisions.
+    * `/var/log/kube-controller-manager.log` - Controller Manager runs controllers to regulate behavior in the cluster (replication).
+  * Worker Nodes:
+    * `/var/log/kubelet.log` - kubelet is responsible for running containers on the node. 
+    * `/var/log/kube-proxy.log` - Responsible for service load balancing.
+* **Stuff Goes Wrong, Here are some Root Causes and how to mitigate them:**
+Directly from above links (remember this doc is for my own studying and local use, obviously the above live Kubernetes documents are more living, maintained, and detailed.)  
+  * General causes to watch for:
+    * VM(s) shutdown
+    * Network partition within cluster, or between cluster and users
+    * Crashes in Kubernetes software
+    * Data loss or unavailability of persistent storage (e.g. GCE PD or AWS EBS volume)
+    * Operator error, for example misconfigured Kubernetes software or application software.
+  * Mitigations:
+    * Action: Use IaaS provider's automatic VM restarting feature for IaaS VMs
+      * Mitigates: Apiserver VM shutdown or apiserver crashing
+      * Mitigates: Supporting services VM shutdown or crashes
+    * Action: Use IaaS providers reliable storage (e.g. GCE PD or AWS EBS volume) for VMs with apiserver+etcd
+      * Mitigates: Apiserver backing storage lost
+    * Action: Use high-availability configuration
+      * Mitigates: Control plane node shutdown or control plane components (scheduler, API server, controller-manager) crashing
+        * Will tolerate one or more simultaneous node or component failures
+      * Mitigates: API server backing storage (i.e., etcd's data directory) lost
+        * Assumes HA (highly-available) etcd configuration
+    * Action: Snapshot apiserver PDs/EBS-volumes periodically
+      * Mitigates: Apiserver backing storage lost
+      * Mitigates: Some cases of operator error
+      * Mitigates: Some cases of Kubernetes software fault
+    * Action: use replication controller and services in front of pods
+      * Mitigates: Node shutdown
+      * Mitigates: Kubelet software fault
+    * Action: applications (containers) designed to tolerate unexpected restarts
+      * Mitigates: Node shutdown
+      * Mitigates: Kubelet software fault
+
 
