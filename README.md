@@ -36,16 +36,23 @@ References: Kubernetes documentation as a whole, but also:
     * **Alternatively output the manifest on the K8s API Server and compare to what you wanted to create.**
       * `kubectl get pods/mypod -o yaml > mypod-on-apiserver.yaml`. Generally you should see a few extra lines of yaml in the manifest running on the API server. **HOWEVER** if lines are missing on the API server manifest vs your file, there's probably an issue with the Pod spec.
 * **Services**
-  * Services provide load balancing across a set of Pods. There are severak common problems that can make Services not work properly.
+  * Services provide load balancing across a set of Pods. There are several common problems that can make Services not work properly.
   * **Verify there are endpoints for the Service** (for every Service object the api server makes an endpoints resource available).
     * Check this with `kubectl get endpoints ${SERVICE_NAME}`. If the endpoints match up with the number of containers that you expect to be a member of the Service. Ex: if you have 3 replicas, you should have 3 IP's output from that last command.
   * **Your Service is missing endpoints.** Try listing the pods using the labels that Service uses.
     * If you have a Service where the labels are: `- selector: name: nginx, type: frontend` for example, use `kubectl get pods --selector=name=nginx,type=frontend`
     * Depending on the output from above, there are a couple possibilities:
       * 1) **If the list of Pods matches expectations, but your endpoints are still empty**: You likely don't have the right ports exposed.
-        * **If your service has a ContainerPort specified, but the Pods that are selected dob't have that port listed, then they won't be added to the endpoints list.** Verify the Pod's containerPort matches the Service's targetPort.
+        * **If your service has a ContainerPort specified, but the Pods that are selected don't have that port listed, then they won't be added to the endpoints list.** Verify the Pod's containerPort matches the Service's targetPort.
       * 2) **Network traffic is not forwarded**. So there are endpoints in the list, you can connect, but the connection is immediately dropped. This likely means your proxy can't contact your pods. Check the following:
         * Are your pods working correctly? (See above).
         * Can you connect to the pods directly?
         * Is your app serving the port that you configured? I.E., if your app serves 8080, `containerPort` needs to be 8080.
+  
+### Step Two: Is it the Cluster?
+*So, you've already ruled out the problem is not with your application, let's troubleshoot the cluster.*  
+* `kubectl get nodes` to verify your cluster actually knows it has nodes!
+  * One thing I've personally run into on this is when running the AWS provider in Terraform via Windows things don't play well, and you end up with everything looking pretty except that EKS doesn't know about the nodes you created for it to use.
+  * Verify they are all ready too!
+  * Similarly, run `kubectl cluster-info dump` to get more detailed info on the overall health of your cluster.
 
